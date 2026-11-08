@@ -1,0 +1,21 @@
+# :schema node_modules/wrangler/config-schema.json
+name = "pardeh-negar"
+main = "worker.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets built by Vite
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+# Cloudflare Workers KV Namespace binding for Blog Database
+[[kv_namespaces]]
+binding = "BLOG_KV"
+id = "ba597afb355c4abcbe22f7692c9bd802"
+preview_id = "ba597afb355c4abcbe22f7692c9bd802"
+
+# Environment variables
+[vars]
+# MODIRIAT_ADMIN can also be added securely via:
+# wrangler secret put MODIRIAT_ADMIN
