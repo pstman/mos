@@ -94,7 +94,7 @@ export const TiltCard3D: React.FC<TiltCard3DProps> = ({
             : 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease, box-shadow 0.3s ease',
         transformStyle: 'preserve-3d',
       }}
-      className={`relative overflow-hidden rounded-[22px] bg-[var(--bg-card)] border border-[var(--color-border)] hover:border-[var(--color-gold)] shadow-[var(--shadow-card)] group ${className}`}
+      className="relative overflow-hidden rounded-[22px] bg-[var(--bg-card)] border border-[var(--color-border)] hover:border-[var(--color-gold)] shadow-[var(--shadow-card)] group"
     >
       {/* Dynamic Cursor-Tracking Specular Gold Glare */}
       {enableGlow && (
@@ -116,7 +116,7 @@ export const TiltCard3D: React.FC<TiltCard3DProps> = ({
         />
       ))}
 
-      <div className="relative z-10 h-full">{children}</div>
+      <div className={`relative z-10 h-full ${className}`}>{children}</div>
     </div>
   );
 };

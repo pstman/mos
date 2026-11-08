@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { TrackItem } from '../../utils/shiriData';
 import { TiltCard3D } from './TiltCard3D';
+import { PlatformSvgIcon } from './SocialIconsBar';
 import fallbackCover from '../../assets/images/album_cover_golden_night_1794140915037.jpg';
 
 interface TrackDetailViewProps {
@@ -26,7 +27,7 @@ interface TrackDetailViewProps {
 
 /**
  * Dedicated Deep-Linked Track Page (#track/:slug)
- * with 3D Interactive Cover Art, Studio Credits, Equalizer Trigger, and Full Lyrics.
+ * with 3D Interactive Cover Art, Studio Credits, Streaming Platform Links, Equalizer Trigger, and Full Lyrics.
  */
 export const TrackDetailView: React.FC<TrackDetailViewProps> = ({
   track,
@@ -80,7 +81,11 @@ export const TrackDetailView: React.FC<TrackDetailViewProps> = ({
           onClick={handleShare}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-[var(--text-main)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] text-xs md:text-sm transition-all cursor-pointer"
         >
-          {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4 text-[var(--color-gold)]" />}
+          {copied ? (
+            <Check className="w-4 h-4 text-emerald-400" />
+          ) : (
+            <Share2 className="w-4 h-4 text-[var(--color-gold)]" />
+          )}
           <span>{copied ? 'لینک مستقیم اثر کپی شد' : 'اشتراک‌گذاری لینک مستقیم'}</span>
         </button>
       </div>
@@ -125,7 +130,8 @@ export const TrackDetailView: React.FC<TrackDetailViewProps> = ({
             <div className="flex items-center gap-2 text-xs text-[var(--color-gold)] mb-2">
               <Disc3 className="w-4 h-4" />
               <span>
-                {track.category === 'collaboration' ? 'همکاری مشترک' : 'تک‌آهنگ رسمی'} · انتشار: {track.releaseDate}
+                {track.category === 'collaboration' ? 'همکاری و تنظیم' : 'تک‌آهنگ رسمی'} · انتشار:{' '}
+                {track.releaseDate}
               </span>
             </div>
 
@@ -137,21 +143,24 @@ export const TrackDetailView: React.FC<TrackDetailViewProps> = ({
               {track.subtitle}
             </p>
 
-            {/* Technical Studio Credits Line (Zero-Pill inline text) */}
-            <div className="py-3.5 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed mb-6">
+            {/* Technical Studio Credits Line */}
+            <div className="py-3.5 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed mb-5">
               <div>
-                <span className="text-[var(--color-gold)] font-semibold">خواننده و آهنگساز:</span> مصطفی شیری ·{' '}
-                <span className="text-[var(--color-gold)] font-semibold">تنظیم:</span> {track.arrangement}
+                <span className="text-[var(--color-gold)] font-semibold">خواننده و آهنگساز:</span>{' '}
+                مصطفی شیری ·{' '}
+                <span className="text-[var(--color-gold)] font-semibold">تنظیم:</span>{' '}
+                {track.arrangement}
               </div>
               <div className="mt-1">
-                <span className="text-[var(--color-gold)] font-semibold">میکس و مسترینگ:</span> {track.mixMaster}
+                <span className="text-[var(--color-gold)] font-semibold">میکس و مسترینگ:</span>{' '}
+                {track.mixMaster}
                 {track.musicalKey ? ` · گام: ${track.musicalKey}` : ''}
                 {track.bpm ? ` · تمپو: ${track.bpm} BPM` : ''}
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 mb-5">
               <button
                 type="button"
                 onClick={onPlayToggle}
@@ -187,18 +196,38 @@ export const TrackDetailView: React.FC<TrackDetailViewProps> = ({
                 className="inline-flex items-center gap-2 px-4 py-3.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-[var(--text-main)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] text-xs sm:text-sm transition-all"
               >
                 <Download className="w-4 h-4 text-[var(--color-gold)]" />
-                <span>دانلود مستقیم فایل صوتی</span>
+                <span>دانلود مستقیم (MP3 320)</span>
               </a>
             </div>
+
+            {/* Global Streaming Links for Track (Spotify, Apple Music, Amazon Music) */}
+            {track.externalLinks && track.externalLinks.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[var(--color-border)]">
+                <span className="text-xs text-[var(--text-muted)]">پخش در پلتفرم‌های جهانی:</span>
+                {track.externalLinks.map((ext, i) => (
+                  <a
+                    key={i}
+                    href={ext.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    dir="ltr"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--color-border)] hover:border-[var(--color-gold)] text-xs text-[var(--color-gold)] transition-all"
+                  >
+                    <PlatformSvgIcon platform={ext.platform} className="w-3.5 h-3.5" />
+                    <span>{ext.label}</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Lyrics Box matching Reference HTML `.lyrics-box` */}
+        {/* Lyrics Box */}
         {track.lyrics && (
           <div className="mt-10 pt-8 border-t border-[var(--color-border)]">
             <div className="flex items-center justify-center gap-2 text-sm font-bold text-[var(--color-gold)] mb-4">
               <Music2 className="w-4 h-4" />
-              <span>متن ترانه «{track.title}»</span>
+              <span>متن ترانه و توضیحات «{track.title}»</span>
             </div>
             <div className="max-w-2xl mx-auto rounded-2xl bg-[var(--bg-surface)] border border-[var(--color-border)] p-6 sm:p-8 text-center whitespace-pre-line leading-9 text-base sm:text-lg text-[var(--text-main)]">
               {track.lyrics}

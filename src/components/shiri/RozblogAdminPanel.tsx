@@ -20,6 +20,8 @@ import {
   Sparkles,
   Code2,
   Eye,
+  Wand2,
+  Share2,
 } from 'lucide-react';
 import {
   SiteData,
@@ -27,29 +29,35 @@ import {
   TrackCategory,
   VideoItem,
   BlogPostItem,
+  SocialPlatformId,
   THEME_PRESETS,
   DEFAULT_SITE_DATA,
   DEFAULT_ADMIN_PASS,
   STORAGE_KEYS,
   createSlug,
   validateUploadSize,
+  clampCardScale,
 } from '../../utils/shiriData';
+import { PlatformSvgIcon } from './SocialIconsBar';
 
-interface RozblogAdminPanelProps {
+interface AdminPanelProps {
   siteData: SiteData;
   onUpdateSiteData: (newData: SiteData, statusMessage?: string) => Promise<void>;
   onCloseAdmin: () => void;
+  onEnterVisualEditor: () => void;
 }
 
-type AdminTab = 'dashboard' | 'tracks' | 'videos' | 'blog' | 'template' | 'cloud';
+type AdminTab = 'dashboard' | 'tracks' | 'videos' | 'blog' | 'socials' | 'template' | 'cloud';
 
 /**
- * Full Rozblog-Inspired CMS & Template Builder Panel for Mostafa Shiri Official Website.
+ * Comprehensive Studio & Website Management Panel (پنل مدیریت)
+ * with Live Visual Editor launcher, Pagination & Scale controls, and Social Media manager.
  */
-export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
+export const RozblogAdminPanel: React.FC<AdminPanelProps> = ({
   siteData,
   onUpdateSiteData,
   onCloseAdmin,
+  onEnterVisualEditor,
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem(STORAGE_KEYS.ADMIN_SESSION_KEY) === 'true';
@@ -68,10 +76,10 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
   const [trackSlug, setTrackSlug] = useState('');
   const [trackImage, setTrackImage] = useState('');
   const [trackAudio, setTrackAudio] = useState('');
-  const [trackDuration, setTrackDuration] = useState('03:30');
-  const [trackReleaseDate, setTrackReleaseDate] = useState('۱۴۰۵/۰۱/۲۵');
+  const [trackDuration, setTrackDuration] = useState('03:20');
+  const [trackReleaseDate, setTrackReleaseDate] = useState('۱۴۰۴');
   const [trackArrangement, setTrackArrangement] = useState('مصطفی شیری');
-  const [trackMixMaster, setTrackMixMaster] = useState('استودیو شخصی مصطفی شیری');
+  const [trackMixMaster, setTrackMixMaster] = useState('مصطفی شیری');
   const [trackLyrics, setTrackLyrics] = useState('');
 
   // Video Editor Form State
@@ -80,18 +88,23 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
   const [videoSubtitle, setVideoSubtitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoPoster, setVideoPoster] = useState('');
-  const [videoQuality, setVideoQuality] = useState('4K STUDIO MASTER');
+  const [videoQuality, setVideoQuality] = useState('4K MASTER');
   const [videoDirector, setVideoDirector] = useState('مصطفی شیری');
   const [videoDescription, setVideoDescription] = useState('');
 
   // Blog Post Editor Form State
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [postTitle, setPostTitle] = useState('');
-  const [postCategory, setPostCategory] = useState('یادداشت استودیویی');
+  const [postCategory, setPostCategory] = useState('معرفی و اخبار');
   const [postExcerpt, setPostExcerpt] = useState('');
   const [postContent, setPostContent] = useState('');
   const [postCover, setPostCover] = useState('');
   const [postAudioUrl, setPostAudioUrl] = useState('');
+
+  // Social Media Form State
+  const [newSocialPlatform, setNewSocialPlatform] = useState<SocialPlatformId>('spotify');
+  const [newSocialLabel, setNewSocialLabel] = useState('');
+  const [newSocialUrl, setNewSocialUrl] = useState('');
 
   // Menu Link Form State
   const [newMenuTitle, setNewMenuTitle] = useState('');
@@ -134,7 +147,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
     } catch {
       // ignore network error
     }
-    setAuthError('رمز عبور وارد شده اشتباه است! (رمز پیش‌فرض طبق فایل مرجع: ms1376)');
+    setAuthError('رمز عبور وارد شده صحیح نیست.');
   };
 
   const handleLogout = () => {
@@ -143,7 +156,6 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
     setPasswordInput('');
   };
 
-  // Base64 File Upload Helper matching Reference HTML (<1.5MB Image, <2MB Audio)
   const handleFileUpload = (
     file: File | undefined,
     maxMb: number,
@@ -159,7 +171,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         onResult(reader.result);
-        showNotice(`فایل «${file.name}» با موفقیت بارگذاری و آماده ذخیره شد.`);
+        showNotice(`فایل «${file.name}» بارگذاری و آماده ذخیره شد.`);
       }
     };
     reader.readAsDataURL(file);
@@ -174,10 +186,10 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
     setTrackSlug('');
     setTrackImage('');
     setTrackAudio('');
-    setTrackDuration('03:30');
-    setTrackReleaseDate('۱۴۰۵/۰۱/۲۵');
+    setTrackDuration('03:20');
+    setTrackReleaseDate('۱۴۰۴');
     setTrackArrangement('مصطفی شیری');
-    setTrackMixMaster('استودیو شخصی مصطفی شیری');
+    setTrackMixMaster('مصطفی شیری');
     setTrackLyrics('');
   };
 
@@ -194,12 +206,12 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
       subtitle: trackSubtitle.trim() || 'تک‌آهنگ رسمی · مصطفی شیری',
       category: trackCategory,
       slug: finalSlug,
-      image: trackImage.trim() || '/src/assets/images/album_cover_golden_night_1794140915037.jpg',
+      image: trackImage.trim() || 'https://rozup.ir/view/4356486/1000181462.jpg',
       audio:
         trackAudio.trim() ||
-        'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
-      duration: trackDuration.trim() || '03:30',
-      releaseDate: trackReleaseDate.trim() || '۱۴۰۵',
+        'https://irsv.upmusics.com/dlw/Mostafa%20Shiri%20-%20To%20Delami%20To%20(320).mp3',
+      duration: trackDuration.trim() || '03:20',
+      releaseDate: trackReleaseDate.trim() || '۱۴۰۴',
       arrangement: trackArrangement.trim() || 'مصطفی شیری',
       mixMaster: trackMixMaster.trim() || 'مصطفی شیری',
       lyrics: trackLyrics.trim(),
@@ -248,7 +260,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
     setVideoSubtitle('');
     setVideoUrl('');
     setVideoPoster('');
-    setVideoQuality('4K STUDIO MASTER');
+    setVideoQuality('4K MASTER');
     setVideoDirector('مصطفی شیری');
     setVideoDescription('');
   };
@@ -265,10 +277,9 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
       subtitle: videoSubtitle.trim() || 'اجرای رسمی استودیویی',
       slug: createSlug(videoTitle),
       videoUrl: videoUrl.trim(),
-      posterUrl:
-        videoPoster.trim() || '/src/assets/images/hero_singer_studio_banner_1794140914800.jpg',
+      posterUrl: videoPoster.trim() || 'https://rozup.ir/view/4356486/1000181462.jpg',
       duration: '02:30',
-      releaseDate: '۱۴۰۵/۰۱/۲۵',
+      releaseDate: '۱۴۰۴',
       quality: videoQuality.trim() || '1080p HD',
       director: videoDirector.trim() || 'مصطفی شیری',
       description: videoDescription.trim(),
@@ -293,7 +304,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
   const resetPostForm = () => {
     setEditingPostId(null);
     setPostTitle('');
-    setPostCategory('یادداشت استودیویی');
+    setPostCategory('معرفی و اخبار');
     setPostExcerpt('');
     setPostContent('');
     setPostCover('');
@@ -303,7 +314,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
   const handleSavePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!postTitle.trim() || !postContent.trim()) {
-      showNotice('عنوان و متن اصلی مطلب وبلاگ الزامی است.', 'error');
+      showNotice('عنوان و متن اصلی مطلب الزامی است.', 'error');
       return;
     }
     const newPost: BlogPostItem = {
@@ -311,12 +322,11 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
       title: postTitle.trim(),
       slug: createSlug(postTitle),
       category: postCategory.trim() || 'یادداشت هنری',
-      date: '۱۴۰۵/۰۱/۲۵',
+      date: '۱۴۰۴',
       readingTime: '۳ دقیقه مطالعه',
       excerpt: postExcerpt.trim() || postContent.trim().slice(0, 140) + '...',
       content: postContent.trim(),
-      coverImage:
-        postCover.trim() || '/src/assets/images/hero_singer_studio_banner_1794140914800.jpg',
+      coverImage: postCover.trim() || 'https://rozup.ir/view/4358537/1000182979.jpg',
       audioUrl: postAudioUrl.trim() || undefined,
     };
 
@@ -325,14 +335,14 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
       : [newPost, ...siteData.blog];
 
     await onUpdateSiteData({ ...siteData, blog: nextBlog });
-    showNotice(editingPostId ? 'مطلب وبلاگ ویرایش شد.' : 'مطلب جدید در وبلاگ منتشر شد.');
+    showNotice(editingPostId ? 'مطلب ویرایش شد.' : 'مطلب جدید منتشر شد.');
     resetPostForm();
   };
 
   const handleDeletePost = async (id: string) => {
     const nextBlog = siteData.blog.filter((p) => p.id !== id);
     await onUpdateSiteData({ ...siteData, blog: nextBlog });
-    showNotice('مطلب وبلاگ حذف شد.');
+    showNotice('مطلب حذف شد.');
   };
 
   // --- Password Gate Screen ---
@@ -344,10 +354,10 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
             <Lock className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-black text-[var(--text-main)] mb-2">
-            ورود به پنل مدیریت رزبلاگ
+            ورود به پنل مدیریت
           </h2>
           <p className="text-xs text-[var(--text-muted)] mb-6 leading-relaxed">
-            سامانه مدیریت یکپارچه آثار صوتی، موزیک‌ویدیوها، وبلاگ و ویرایشگر زنده قالب اختصاصی مصطفی شیری
+            جهت دسترسی به مدیریت آثار، تنظیمات نمایش و ویرایشگر زنده روی سایت، رمز عبور خود را وارد نمایید
           </p>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -355,7 +365,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
               type="password"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder="رمز عبور مدیریت (پیش‌فرض: ms1376)"
+              placeholder="رمز عبور"
               dir="ltr"
               className="w-full px-4 py-3.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] focus:border-[var(--color-gold)] text-center text-[var(--text-main)] outline-none font-mono-num"
             />
@@ -368,7 +378,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
               type="submit"
               className="w-full py-3.5 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-sm hover:bg-[var(--color-gold-hover)] transition-colors cursor-pointer"
             >
-              ورود به میز کار مدیریت
+              ورود
             </button>
           </form>
 
@@ -394,30 +404,41 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
           </div>
           <div>
             <h2 className="text-lg md:text-xl font-black text-[var(--text-main)]">
-              پنل مدیریت جامع رزبلاگ · وب‌سایت رسمی مصطفی شیری
+              پنل مدیریت · وب‌سایت رسمی مصطفی شیری
             </h2>
             <p className="text-xs text-[var(--text-muted)]">
-              مدیریت تک‌آهنگ‌ها، موزیک‌ویدیوها، مطالب وبلاگ، ویرایشگر قالب و اتصال ابری کلودفلر
+              مدیریت تک‌آهنگ‌ها، شبکه‌های اجتماعی، اندازه و تعداد پست‌ها و ویرایشگر زنده دیداری
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Launch Live Visual On-Page Editor */}
+          <button
+            type="button"
+            onClick={onEnterVisualEditor}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d6b36c] to-[#dfc48e] text-[#050505] font-black text-xs shadow-[0_0_25px_rgba(214,179,108,0.45)] hover:scale-105 transition-all cursor-pointer"
+          >
+            <Wand2 className="w-4 h-4" />
+            <span>ویرایش زنده و دیداری روی خود سایت (Live Visual Editor)</span>
+          </button>
+
           <button
             type="button"
             onClick={onCloseAdmin}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-xs hover:bg-[var(--color-gold-hover)] cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[var(--color-border)] text-[var(--text-main)] hover:border-[var(--color-gold)] text-xs font-bold cursor-pointer"
           >
-            <Eye className="w-4 h-4" />
-            <span>مشاهده زنده سایت</span>
+            <Eye className="w-4 h-4 text-[var(--color-gold)]" />
+            <span>مشاهده سایت</span>
           </button>
+
           <button
             type="button"
             onClick={handleLogout}
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-semibold cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>خروج</span>
+            <span>خروج و قفل پنل</span>
           </button>
         </div>
       </div>
@@ -440,17 +461,18 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
         </div>
       )}
 
-      {/* Main Rozblog Sidebar + Content Layout */}
+      {/* Main Sidebar + Content Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Rozblog Style Right Navigation Sidebar */}
+        {/* Right Navigation Sidebar */}
         <aside className="lg:col-span-3 space-y-2">
           {[
             { id: 'dashboard', label: 'پیشخوان و آمار سایت', icon: LayoutDashboard },
             { id: 'tracks', label: `مدیریت آثار صوتی (${siteData.tracks.length})`, icon: Music },
-            { id: 'videos', label: `مدیریت موزیک‌ویدیوها (${siteData.videos.length})`, icon: Video },
-            { id: 'blog', label: `مطالب و یادداشت‌ها (${siteData.blog.length})`, icon: FileText },
-            { id: 'template', label: 'قالب‌ساز و ویرایشگر پوسته', icon: Palette },
-            { id: 'cloud', label: 'پروفایل، کلودفلر و پشتیبان', icon: Cloud },
+            { id: 'blog', label: `مطالب و پست‌ها (${siteData.blog.length})`, icon: FileText },
+            { id: 'socials', label: `شبکه‌های اجتماعی (${siteData.socials.length})`, icon: Share2 },
+            { id: 'videos', label: `موزیک‌ویدیوها (${siteData.videos.length})`, icon: Video },
+            { id: 'template', label: 'اندازه پست‌ها، صفحه‌بندی و قالب', icon: Palette },
+            { id: 'cloud', label: 'بیوگرافی، کلودفلر و پشتیبان', icon: Cloud },
           ].map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
@@ -478,7 +500,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               <h3 className="text-lg font-bold text-[var(--color-gold)] border-b border-[var(--color-border)] pb-3">
-                پیشخوان مدیریت و وضعیت سامانه رزبلاگ
+                پیشخوان مدیریت وب‌سایت رسمی مصطفی شیری
               </h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -489,52 +511,127 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   </p>
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]">
-                  <span className="text-xs text-[var(--text-muted)]">موزیک‌ویدیوها</span>
-                  <p className="font-mono-num text-2xl font-black text-[var(--color-gold)] mt-1">
-                    {siteData.videos.length}
-                  </p>
-                </div>
-                <div className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]">
-                  <span className="text-xs text-[var(--text-muted)]">یادداشت‌های وبلاگ</span>
+                  <span className="text-xs text-[var(--text-muted)]">مطالب و پست‌ها</span>
                   <p className="font-mono-num text-2xl font-black text-[var(--color-gold)] mt-1">
                     {siteData.blog.length}
                   </p>
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]">
-                  <span className="text-xs text-[var(--text-muted)]">مجموع پخش استودیویی</span>
+                  <span className="text-xs text-[var(--text-muted)]">پست در هر صفحه</span>
                   <p className="font-mono-num text-2xl font-black text-[var(--color-gold)] mt-1">
-                    {siteData.tracks.reduce((acc, t) => acc + (t.plays || 0), 0).toLocaleString()}
+                    {siteData.template.postsPerPage || 2}
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]">
+                  <span className="text-xs text-[var(--text-muted)]">مقیاس اندازه پست‌ها</span>
+                  <p className="font-mono-num text-2xl font-black text-[var(--color-gold)] mt-1">
+                    {siteData.template.cardScalePercent || 92}%
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] p-5 space-y-3">
-                <h4 className="text-sm font-bold text-[var(--text-main)]">
-                  دسترسی سریع به ماژول‌های کلیدی رزبلاگ
+              {/* Quick Scale & Posts-Per-Page Controls right on Dashboard */}
+              <div className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--color-gold)]/35 p-5 space-y-4">
+                <h4 className="text-sm font-bold text-[var(--color-gold)]">
+                  تنظیم سریع تعداد پست در هر صفحه و درصد اندازه کارت‌ها در صفحه اصلی
                 </h4>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('tracks')}
-                    className="px-4 py-2.5 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-xs cursor-pointer"
-                  >
-                    + انتشار تک‌آهنگ جدید
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('videos')}
-                    className="px-4 py-2.5 rounded-xl border border-[var(--color-gold)]/50 text-[var(--color-gold)] font-bold text-xs cursor-pointer"
-                  >
-                    + افزودن موزیک‌ویدیو
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('template')}
-                    className="px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-[var(--text-main)] hover:border-[var(--color-gold)] font-bold text-xs cursor-pointer"
-                  >
-                    ویرایشگر پوسته و قالب رزبلاگ
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                      تعداد آهنگ در هر صفحه اصلی:
+                    </label>
+                    <select
+                      value={siteData.template.postsPerPage || 2}
+                      onChange={(e) => {
+                        onUpdateSiteData({
+                          ...siteData,
+                          template: {
+                            ...siteData.template,
+                            postsPerPage: Number(e.target.value),
+                          },
+                        });
+                        showNotice(`تعداد آهنگ در هر صفحه به ${e.target.value} تغییر یافت.`);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-bold text-[var(--text-main)]"
+                    >
+                      <option value={2}>۲ اثر در هر صفحه (پیشنهادی)</option>
+                      <option value={4}>۴ اثر در هر صفحه</option>
+                      <option value={6}>۶ اثر در هر صفحه</option>
+                      <option value={99}>نمایش همه در یک صفحه</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                      تعداد پست وبلاگ در هر صفحه:
+                    </label>
+                    <select
+                      value={siteData.template.blogPostsPerPage || 2}
+                      onChange={(e) => {
+                        onUpdateSiteData({
+                          ...siteData,
+                          template: {
+                            ...siteData.template,
+                            blogPostsPerPage: Number(e.target.value),
+                          },
+                        });
+                        showNotice(`تعداد پست در هر صفحه به ${e.target.value} تغییر یافت.`);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-bold text-[var(--text-main)]"
+                    >
+                      <option value={2}>۲ پست در هر صفحه (پیشنهادی)</option>
+                      <option value={4}>۴ پست در هر صفحه</option>
+                      <option value={6}>۶ پست در هر صفحه</option>
+                      <option value={99}>نمایش همه پست‌ها</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-[var(--text-muted)]">درصد اندازه پست‌ها:</span>
+                      <span className="font-mono-num font-bold text-[var(--color-gold)]">
+                        {siteData.template.cardScalePercent || 92}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={70}
+                      max={115}
+                      step={2}
+                      value={siteData.template.cardScalePercent || 92}
+                      onChange={(e) =>
+                        onUpdateSiteData({
+                          ...siteData,
+                          template: {
+                            ...siteData.template,
+                            cardScalePercent: clampCardScale(Number(e.target.value)),
+                          },
+                        })
+                      }
+                      className="w-full shiri-slider my-2"
+                    />
+                  </div>
                 </div>
+              </div>
+
+              {/* Visual Live Editor Banner */}
+              <div className="rounded-2xl bg-gradient-to-r from-[var(--color-gold)]/15 via-[var(--bg-surface)] to-[var(--bg-surface)] border border-[var(--color-gold)]/45 p-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-sm font-bold text-[var(--color-gold)] flex items-center gap-2">
+                    <Wand2 className="w-4 h-4" />
+                    <span>ویرایشگر زنده و دیداری روی خود سایت (Live Visual Mode)</span>
+                  </h4>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    بدون نیاز به فرم‌های پیچیده، مستقیماً روی صفحه اصلی سایت کلیک کنید و نوشته‌ها، دکمه‌ها، عکس‌ها و اندازه پست‌ها را همان‌جا تغییر دهید و ذخیره (Apply) کنید.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onEnterVisualEditor}
+                  className="px-5 py-3 rounded-xl bg-[var(--color-gold)] text-[#050505] font-black text-xs hover:bg-[var(--color-gold-hover)] cursor-pointer"
+                >
+                  ورود به ویرایشگر زنده روی سایت ←
+                </button>
               </div>
             </div>
           )}
@@ -551,25 +648,25 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        نام اثر (الزامی)
+                        عنوان اثر *
                       </label>
                       <input
                         type="text"
                         value={trackTitle}
                         onChange={(e) => setTrackTitle(e.target.value)}
-                        placeholder="مثلاً: شب‌های بارانی تهران"
+                        placeholder="مثلاً: بیا کنارم"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm text-[var(--text-main)]"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        زیرعنوان / توضیح کوتاه
+                        توضیح کوتاه *
                       </label>
                       <input
                         type="text"
                         value={trackSubtitle}
                         onChange={(e) => setTrackSubtitle(e.target.value)}
-                        placeholder="مثلاً: تک‌آهنگ رسمی · تنظیم پیانو و زهی"
+                        placeholder="مثلاً: ترانه، آهنگ و تنظیم: مصطفی شیری"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm text-[var(--text-main)]"
                       />
                     </div>
@@ -578,34 +675,34 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        دسته‌بندی اثر
+                        بخش *
                       </label>
                       <select
                         value={trackCategory}
                         onChange={(e) => setTrackCategory(e.target.value as TrackCategory)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm text-[var(--text-main)]"
                       >
-                        <option value="single">تک‌آهنگ (Single)</option>
-                        <option value="collaboration">همکاری مشترک (Collaboration)</option>
-                        <option value="album">آلبوم (Album Track)</option>
+                        <option value="single">تک‌آهنگ‌ها</option>
+                        <option value="collaboration">همکاری‌ها</option>
+                        <option value="album">آلبوم</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        نامک لینک اختصاصی (Slug)
+                        نامک انگلیسی (Slug) *
                       </label>
                       <input
                         type="text"
                         dir="ltr"
                         value={trackSlug}
                         onChange={(e) => setTrackSlug(e.target.value)}
-                        placeholder="shabhaye-barani"
+                        placeholder="bia-kenaram"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm text-[var(--text-main)] font-mono-num"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        مدت زمان و تاریخ انتشار
+                        مدت زمان و سال انتشار
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         <input
@@ -613,14 +710,14 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                           dir="ltr"
                           value={trackDuration}
                           onChange={(e) => setTrackDuration(e.target.value)}
-                          placeholder="03:45"
+                          placeholder="03:28"
                           className="px-3 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs font-mono-num"
                         />
                         <input
                           type="text"
                           value={trackReleaseDate}
                           onChange={(e) => setTrackReleaseDate(e.target.value)}
-                          placeholder="۱۴۰۵/۰۱/۲۰"
+                          placeholder="۱۴۰۴"
                           className="px-3 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs"
                         />
                       </div>
@@ -631,14 +728,14 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-[var(--bg-surface)]/60 border border-[var(--color-border)]">
                     <div>
                       <label className="block text-xs text-[var(--color-gold)] font-semibold mb-1.5">
-                        تصویر کاver (لینک مستقیم یا آپلود فایل تا ۱.۵ مگابایت)
+                        لینک مستقیم عکس کاور (یا انتخاب فایل زیر ۱.۵ مگابایت)
                       </label>
                       <input
                         type="text"
                         dir="ltr"
                         value={trackImage}
                         onChange={(e) => setTrackImage(e.target.value)}
-                        placeholder="https://...jpg"
+                        placeholder="https://rozup.ir/view/..."
                         className="w-full px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--color-border)] text-xs mb-2"
                       />
                       <input
@@ -653,7 +750,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
 
                     <div>
                       <label className="block text-xs text-[var(--color-gold)] font-semibold mb-1.5">
-                        فایل صوتی MP3/M4A (لینک مستقیم یا آپلود فایل تا ۲ مگابایت)
+                        لینک مستقیم فایل MP3 (یا انتخاب فایل زیر ۲ مگابایت)
                       </label>
                       <input
                         type="text"
@@ -674,35 +771,9 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Credits */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        تنظیم‌کننده
-                      </label>
-                      <input
-                        type="text"
-                        value={trackArrangement}
-                        onChange={(e) => setTrackArrangement(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        میکس و مسترینگ
-                      </label>
-                      <input
-                        type="text"
-                        value={trackMixMaster}
-                        onChange={(e) => setTrackMixMaster(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                      />
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                      متن کامل ترانه (Lyrics)
+                      متن ترانه
                     </label>
                     <textarea
                       rows={4}
@@ -719,7 +790,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                       className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-sm hover:bg-[var(--color-gold-hover)] cursor-pointer"
                     >
                       <Save className="w-4 h-4" />
-                      <span>{editingTrackId ? 'ذخیره تغییرات اثر' : 'انتشار اثر در سایت'}</span>
+                      <span>{editingTrackId ? 'ذخیره تغییرات اثر' : 'ثبت و انتشار اثر'}</span>
                     </button>
                     {editingTrackId && (
                       <button
@@ -727,7 +798,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                         onClick={resetTrackForm}
                         className="px-4 py-3 rounded-xl border border-[var(--color-border)] text-xs text-[var(--text-muted)] cursor-pointer"
                       >
-                        انصراف از ویرایش
+                        انصراف
                       </button>
                     )}
                   </div>
@@ -737,7 +808,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
               {/* Existing Tracks List */}
               <div>
                 <h4 className="text-sm font-bold text-[var(--text-main)] mb-3">
-                  فهرست آثار منتشرشده ({siteData.tracks.length})
+                  لیست آثار منتشرشده ({siteData.tracks.length})
                 </h4>
                 <div className="space-y-2.5">
                   {siteData.tracks.map((t) => (
@@ -785,12 +856,272 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
             </div>
           )}
 
-          {/* TAB 3: VIDEOS MANAGER */}
+          {/* TAB 3: BLOG POSTS MANAGER */}
+          {activeTab === 'blog' && (
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-lg font-bold text-[var(--color-gold)] border-b border-[var(--color-border)] pb-3 mb-4">
+                  مدیریت مطالب، پست‌ها و فعالیت‌های هنری
+                </h3>
+                <form onSubmit={handleSavePost} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                        عنوان مطلب یا پست *
+                      </label>
+                      <input
+                        type="text"
+                        value={postTitle}
+                        onChange={(e) => setPostTitle(e.target.value)}
+                        placeholder="عنوان مطلب..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                        دسته‌بندی موضوعی
+                      </label>
+                      <input
+                        type="text"
+                        value={postCategory}
+                        onChange={(e) => setPostCategory(e.target.value)}
+                        placeholder="معرفی رسمی / پکیج استودیویی"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                        لینک تصویر شاخص پست
+                      </label>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        value={postCover}
+                        onChange={(e) => setPostCover(e.target.value)}
+                        placeholder="https://rozup.ir/view/..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                        لینک فایل صوتی پیوست (اختیاری)
+                      </label>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        value={postAudioUrl}
+                        onChange={(e) => setPostAudioUrl(e.target.value)}
+                        placeholder="https://...mp3"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                      خلاصه مطلب (نمایش در کارت صفحه اصلی)
+                    </label>
+                    <input
+                      type="text"
+                      value={postExcerpt}
+                      onChange={(e) => setPostExcerpt(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                      متن کامل مطلب *
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={postContent}
+                      onChange={(e) => setPostContent(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-sm cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>انتشار پست در سایت</span>
+                  </button>
+                </form>
+              </div>
+
+              <div className="space-y-2.5">
+                {siteData.blog.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={p.coverImage}
+                        alt={p.title}
+                        className="w-12 h-12 rounded-lg object-cover shrink-0 border border-[var(--color-border)]"
+                      />
+                      <div className="min-w-0">
+                        <h5 className="text-sm font-bold text-[var(--text-main)] truncate">
+                          {p.title}
+                        </h5>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {p.category} · {p.date}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePost(p.id)}
+                      className="p-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: SOCIAL MEDIA LINKS MANAGER */}
+          {activeTab === 'socials' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold text-[var(--color-gold)] border-b border-[var(--color-border)] pb-3">
+                تنظیمات دقیق شبکه‌های اجتماعی و پلتفرم‌های جهانی مصطفی شیری
+              </h3>
+
+              {/* Add New Social Platform */}
+              <div className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] space-y-3">
+                <h4 className="text-xs font-bold text-[var(--color-gold)]">
+                  افزودن آیکون شبکه اجتماعی یا پلتفرم جدید
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <select
+                    value={newSocialPlatform}
+                    onChange={(e) => setNewSocialPlatform(e.target.value as SocialPlatformId)}
+                    className="px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-xs text-[var(--text-main)]"
+                  >
+                    <option value="spotify">Spotify (اسپاتیفای)</option>
+                    <option value="apple">Apple Music (اپل موزیک)</option>
+                    <option value="youtube">YouTube (یوتیوب)</option>
+                    <option value="instagram">Instagram (اینستاگرام)</option>
+                    <option value="telegram">Telegram (تلگرام)</option>
+                    <option value="amazon">Amazon Music (آمازون موزیک)</option>
+                    <option value="deezer">Deezer (دیزر)</option>
+                    <option value="tidal">Tidal (تایدال)</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    value={newSocialLabel}
+                    onChange={(e) => setNewSocialLabel(e.target.value)}
+                    placeholder="عنوان (مثلاً Spotify)"
+                    className="px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-xs"
+                  />
+
+                  <input
+                    type="url"
+                    dir="ltr"
+                    value={newSocialUrl}
+                    onChange={(e) => setNewSocialUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-mono-num"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!newSocialUrl.trim()) {
+                      showNotice('لطفاً لینک شبکه اجتماعی را وارد کنید.', 'error');
+                      return;
+                    }
+                    await onUpdateSiteData({
+                      ...siteData,
+                      socials: [
+                        ...siteData.socials,
+                        {
+                          id: `soc-${Date.now()}`,
+                          platform: newSocialPlatform,
+                          label: newSocialLabel.trim() || newSocialPlatform.toUpperCase(),
+                          url: newSocialUrl.trim(),
+                        },
+                      ],
+                    });
+                    setNewSocialLabel('');
+                    setNewSocialUrl('');
+                    showNotice('شبکه اجتماعی جدید اضافه شد.');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>افزودن به ردیف شبکه‌های اجتماعی</span>
+                </button>
+              </div>
+
+              {/* Editable List of Current Socials */}
+              <div className="space-y-2.5">
+                {siteData.socials.map((soc, idx) => (
+                  <div
+                    key={soc.id}
+                    className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-3.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]"
+                  >
+                    <div className="flex items-center gap-3 min-w-[160px]">
+                      <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border border-[var(--color-gold)]/40 flex items-center justify-center text-[var(--color-gold)] shrink-0">
+                        <PlatformSvgIcon platform={soc.platform} className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="text"
+                        value={soc.label}
+                        onChange={(e) => {
+                          const next = [...siteData.socials];
+                          next[idx] = { ...soc, label: e.target.value };
+                          onUpdateSiteData({ ...siteData, socials: next });
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-bold text-[var(--text-main)] w-32"
+                      />
+                    </div>
+
+                    <input
+                      type="url"
+                      dir="ltr"
+                      value={soc.url}
+                      onChange={(e) => {
+                        const next = [...siteData.socials];
+                        next[idx] = { ...soc, url: e.target.value };
+                        onUpdateSiteData({ ...siteData, socials: next });
+                      }}
+                      className="flex-1 px-3 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-mono-num text-[var(--color-gold)]"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateSiteData({
+                          ...siteData,
+                          socials: siteData.socials.filter((s) => s.id !== soc.id),
+                        })
+                      }
+                      className="p-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: VIDEOS MANAGER */}
           {activeTab === 'videos' && (
             <div className="space-y-8">
               <div>
                 <h3 className="text-lg font-bold text-[var(--color-gold)] border-b border-[var(--color-border)] pb-3 mb-4">
-                  مدیریت موزیک‌ویدیوها و اجراهای زنده (پلیر اختصاصی ویدیو)
+                  مدیریت موزیک‌ویدیوها و تیزرها (پلیر اختصاصی ویدیو)
                 </h3>
                 <form onSubmit={handleSaveVideo} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -802,7 +1133,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                         type="text"
                         value={videoTitle}
                         onChange={(e) => setVideoTitle(e.target.value)}
-                        placeholder="مثلاً: اجرای استودیویی قطعه افق تنهایی"
+                        placeholder="مثلاً: موزیک‌ویدیو تو دلمی تو"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
                       />
                     </div>
@@ -814,7 +1145,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                         type="text"
                         value={videoSubtitle}
                         onChange={(e) => setVideoSubtitle(e.target.value)}
-                        placeholder="مثلاً: ضبط زنده در استودیو شخصی"
+                        placeholder="مثلاً: اجرای استودیویی"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
                       />
                     </div>
@@ -843,49 +1174,10 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                         dir="ltr"
                         value={videoPoster}
                         onChange={(e) => setVideoPoster(e.target.value)}
-                        placeholder="https://.../poster.jpg"
+                        placeholder="https://rozup.ir/view/..."
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs font-mono-num"
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        کیفیت پخش (نشان پلیر)
-                      </label>
-                      <input
-                        type="text"
-                        dir="ltr"
-                        value={videoQuality}
-                        onChange={(e) => setVideoQuality(e.target.value)}
-                        placeholder="4K STUDIO MASTER"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs font-mono-num"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        کارگردان هنری / تهیه‌کننده
-                      </label>
-                      <input
-                        type="text"
-                        value={videoDirector}
-                        onChange={(e) => setVideoDirector(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                      توضیحات تکمیلی ویدیو
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={videoDescription}
-                      onChange={(e) => setVideoDescription(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                    />
                   </div>
 
                   <button
@@ -893,7 +1185,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-sm cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>افزودن ویدیو به پلیر اختصاصی سایت</span>
+                    <span>افزودن ویدیو</span>
                   </button>
                 </form>
               </div>
@@ -923,140 +1215,105 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
             </div>
           )}
 
-          {/* TAB 4: BLOG POSTS MANAGER */}
-          {activeTab === 'blog' && (
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-lg font-bold text-[var(--color-gold)] border-b border-[var(--color-border)] pb-3 mb-4">
-                  مدیریت مطالب وبلاگ و یادداشت‌های استودیویی
-                </h3>
-                <form onSubmit={handleSavePost} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        عنوان مطلب یا خبر
-                      </label>
-                      <input
-                        type="text"
-                        value={postTitle}
-                        onChange={(e) => setPostTitle(e.target.value)}
-                        placeholder="عنوان یادداشت..."
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        دسته‌بندی موضوعی
-                      </label>
-                      <input
-                        type="text"
-                        value={postCategory}
-                        onChange={(e) => setPostCategory(e.target.value)}
-                        placeholder="یادداشت استودیویی / خبر انتشار"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        لینک تصویر شاخص مطلب
-                      </label>
-                      <input
-                        type="text"
-                        dir="ltr"
-                        value={postCover}
-                        onChange={(e) => setPostCover(e.target.value)}
-                        placeholder="https://.../cover.jpg"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                        لینک فایل صوتی پیوست (اختیاری)
-                      </label>
-                      <input
-                        type="text"
-                        dir="ltr"
-                        value={postAudioUrl}
-                        onChange={(e) => setPostAudioUrl(e.target.value)}
-                        placeholder="https://.../voice-note.mp3"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                      خلاصه مطلب (Excerpt)
-                    </label>
-                    <input
-                      type="text"
-                      value={postExcerpt}
-                      onChange={(e) => setPostExcerpt(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-[var(--text-muted)] mb-1.5">
-                      متن کامل یادداشت
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={postContent}
-                      onChange={(e) => setPostContent(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] text-sm"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-gold)] text-[#050505] font-bold text-sm cursor-pointer"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>انتشار یادداشت در وبلاگ</span>
-                  </button>
-                </form>
-              </div>
-
-              <div className="space-y-2.5">
-                {siteData.blog.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]"
-                  >
-                    <div>
-                      <h5 className="text-sm font-bold text-[var(--text-main)]">{p.title}</h5>
-                      <p className="text-xs text-[var(--text-muted)]">
-                        {p.category} · {p.date}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePost(p.id)}
-                      className="p-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: ROZBLOG TEMPLATE & THEME STUDIO */}
+          {/* TAB 6: PAGINATION, SCALE & TEMPLATE STUDIO */}
           {activeTab === 'template' && (
             <div className="space-y-8">
               <div>
                 <h3 className="text-lg font-bold text-[var(--color-gold)] border-b border-[var(--color-border)] pb-3 mb-4">
-                  قالب‌ساز و پوسته‌ساز زنده رزبلاگ (Theme & Template Builder)
+                  تنظیمات اندازه پست‌ها، تعداد نمایش در هر صفحه و قالب سایت
                 </h3>
 
-                {/* Ready Presets */}
+                {/* 1. Pagination & Card Scale Percentage */}
+                <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--color-gold)]/45 space-y-4 mb-6">
+                  <h4 className="text-xs sm:text-sm font-bold text-[var(--color-gold)]">
+                    ۱. کنترل تعداد پست در هر صفحه و درصد کوچک/بزرگ شدن کارت‌ها (جهت دیده شدن در صفحه اول):
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                        تعداد آهنگ در هر صفحه:
+                      </label>
+                      <select
+                        value={siteData.template.postsPerPage || 2}
+                        onChange={(e) =>
+                          onUpdateSiteData({
+                            ...siteData,
+                            template: {
+                              ...siteData.template,
+                              postsPerPage: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-bold text-[var(--text-main)]"
+                      >
+                        <option value={2}>۲ پست در هر صفحه</option>
+                        <option value={4}>۴ پست در هر صفحه</option>
+                        <option value={6}>۶ پست در هر صفحه</option>
+                        <option value={99}>نمایش همه</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                        تعداد مطلب وبلاگ در هر صفحه:
+                      </label>
+                      <select
+                        value={siteData.template.blogPostsPerPage || 2}
+                        onChange={(e) =>
+                          onUpdateSiteData({
+                            ...siteData,
+                            template: {
+                              ...siteData.template,
+                              blogPostsPerPage: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-bold text-[var(--text-main)]"
+                      >
+                        <option value={2}>۲ مطلب در هر صفحه</option>
+                        <option value={4}>۴ مطلب در هر صفحه</option>
+                        <option value={6}>۶ مطلب در هر صفحه</option>
+                        <option value={99}>نمایش همه</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="text-[var(--text-muted)]">درصد مقیاس اندازه پست‌ها:</span>
+                        <span className="font-mono-num font-bold text-[var(--color-gold)]">
+                          {siteData.template.cardScalePercent || 92}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={70}
+                        max={115}
+                        step={2}
+                        value={siteData.template.cardScalePercent || 92}
+                        onChange={(e) =>
+                          onUpdateSiteData({
+                            ...siteData,
+                            template: {
+                              ...siteData.template,
+                              cardScalePercent: clampCardScale(Number(e.target.value)),
+                            },
+                          })
+                        }
+                        className="w-full shiri-slider my-2"
+                      />
+                      <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
+                        <span>۷۰٪ (فشرده)</span>
+                        <span>۹۲٪ (استاندارد)</span>
+                        <span>۱۱۵٪ (بزرگ)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Ready Presets */}
                 <label className="block text-xs font-bold text-[var(--text-muted)] mb-2.5">
-                  ۱. انتخاب پوسته آماده استودیویی:
+                  ۲. انتخاب پوسته آماده استودیویی:
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                   {THEME_PRESETS.map((preset) => (
@@ -1076,7 +1333,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                             colorBorder: preset.colorBorder,
                           },
                         });
-                        showNotice(`پوسته «${preset.name}» به صورت زنده روی سایت اعمال شد.`);
+                        showNotice(`پوسته «${preset.name}» اعمال شد.`);
                       }}
                       className={`flex items-center justify-between p-3.5 rounded-xl border text-right transition-all cursor-pointer ${
                         siteData.template.activePresetId === preset.id
@@ -1101,9 +1358,9 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   ))}
                 </div>
 
-                {/* Custom Color Pickers */}
+                {/* 3. Custom Color Pickers */}
                 <label className="block text-xs font-bold text-[var(--text-muted)] mb-2.5">
-                  ۲. شخصی‌سازی رنگ‌های قالب (اعمال آنی):
+                  ۳. شخصی‌سازی رنگ‌ها و چیدمان ستون‌ها:
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   <div className="p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]">
@@ -1168,7 +1425,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   </div>
                   <div className="p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)]">
                     <span className="block text-[11px] text-[var(--text-muted)] mb-1">
-                      چیدمان گرید آثار
+                      چیدمان ستون‌ها
                     </span>
                     <select
                       value={siteData.template.gridColumns}
@@ -1189,9 +1446,9 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   </div>
                 </div>
 
-                {/* 3D & 4D Micro-Interactions Toggles */}
+                {/* 4. 3D & 4D Micro-Interactions Toggles */}
                 <label className="block text-xs font-bold text-[var(--text-muted)] mb-2.5">
-                  ۳. تنظیمات افکت‌های سه‌بعدی و چهاربعدی تعاملی:
+                  ۴. تنظیمات افکت‌های سه‌بعدی و چهاربعدی تعاملی:
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                   {[
@@ -1232,12 +1489,12 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   ))}
                 </div>
 
-                {/* Rozblog Template Code & Tag Editor */}
+                {/* 5. Custom HTML Template Code Editor */}
                 <div className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--color-border)] space-y-3 mb-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-[var(--color-gold)]">
                       <Code2 className="w-4 h-4" />
-                      <span>ویرایشگر کد قالب و تگ‌های پویای رزبلاگ</span>
+                      <span>ویرایشگر کد قالب و تگ‌های پویای سایت</span>
                     </div>
                     <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                       <input
@@ -1254,27 +1511,20 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                         }
                         className="accent-[var(--color-gold)]"
                       />
-                      <span>نمایش بلوک قالب در صفحه اصلی</span>
+                      <span>نمایش بلوک در بخش درباره من</span>
                     </label>
                   </div>
-
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    تگ‌های قابل استفاده در کد قالب: <code>[artist-name]</code> ،{' '}
-                    <code>[artist-role]</code> ، <code>[tracks-count]</code> ،{' '}
-                    <code>[videos-count]</code> ، <code>[latest-track]</code> ،{' '}
-                    <code>[studio-name]</code>
-                  </p>
 
                   <textarea
                     rows={4}
                     dir="ltr"
-                    value={siteData.template.customRozblogTemplate}
+                    value={siteData.template.customTemplateHtml}
                     onChange={(e) =>
                       onUpdateSiteData({
                         ...siteData,
                         template: {
                           ...siteData.template,
-                          customRozblogTemplate: e.target.value,
+                          customTemplateHtml: e.target.value,
                         },
                       })
                     }
@@ -1282,17 +1532,17 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   />
                 </div>
 
-                {/* Menu Links Builder */}
+                {/* 6. Menu Links Builder */}
                 <div className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--color-border)] space-y-4">
                   <h4 className="text-xs font-bold text-[var(--color-gold)]">
-                    ۴. مدیریت لینک‌های منوی بالای سایت
+                    ۵. مدیریت لینک‌های منوی بالای سایت
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     <input
                       type="text"
                       value={newMenuTitle}
                       onChange={(e) => setNewMenuTitle(e.target.value)}
-                      placeholder="عنوان منو (مثلاً: گالری)"
+                      placeholder="عنوان منو"
                       className="flex-1 min-w-[140px] px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--color-border)] text-xs"
                     />
                     <input
@@ -1300,7 +1550,7 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                       dir="ltr"
                       value={newMenuLink}
                       onChange={(e) => setNewMenuLink(e.target.value)}
-                      placeholder="#tracks-section"
+                      placeholder="#singles"
                       className="flex-1 min-w-[140px] px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-mono-num"
                     />
                     <button
@@ -1355,14 +1605,14 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                 {/* Custom Blocks Manager */}
                 <div className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--color-border)] space-y-3 mt-6">
                   <h4 className="text-xs font-bold text-[var(--color-gold)]">
-                    ۵. مدیریت بلوک‌های اطلاع‌رسانی و تبلیغاتی رزبلاگ
+                    ۶. مدیریت نوار اطلاع‌رسانی بالای سایت
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
                       type="text"
                       value={newBlockTitle}
                       onChange={(e) => setNewBlockTitle(e.target.value)}
-                      placeholder="عنوان بلوک اطلاعیه..."
+                      placeholder="عنوان اطلاعیه..."
                       className="px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--color-border)] text-xs"
                     />
                     <input
@@ -1392,18 +1642,18 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                       });
                       setNewBlockTitle('');
                       setNewBlockHtml('');
-                      showNotice('بلوک جدید اضافه شد.');
+                      showNotice('بلوک اطلاعیه اضافه شد.');
                     }}
                     className="px-4 py-2 rounded-lg bg-[var(--color-gold)] text-[#050505] font-bold text-xs cursor-pointer"
                   >
-                    + ایجاد بلوک جدید
+                    + ایجاد اطلاعیه
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 6: ARTIST PROFILE, CLOUDFLARE KV & BACKUP */}
+          {/* TAB 7: ARTIST PROFILE, CLOUDFLARE KV & BACKUP */}
           {activeTab === 'cloud' && (
             <div className="space-y-8">
               <div>
@@ -1455,13 +1705,13 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                   />
                 </div>
 
-                {/* Cloudflare Worker URL Connector matching Reference HTML */}
+                {/* Cloudflare Worker URL Connector */}
                 <div className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--color-border)] space-y-3 mb-6">
                   <h4 className="text-xs font-bold text-[var(--color-gold)]">
-                    اتصال به دیتابیس ابری کلودفلر (Cloudflare Worker KV)
+                    اتصال به دیتابیس ابری کلودفلر (Cloudflare Worker)
                   </h4>
                   <p className="text-xs text-[var(--text-muted)]">
-                    علاوه بر ذخیره‌سازی خودکار روی سرور داخلی سایت، در صورت داشتن آدرس Cloudflare Worker شخصی می‌توانید آن را وارد کنید:
+                    آدرس Worker کلودفلر خود را وارد کنید تا تمام تغییرات روی دیتابیس ابری ذخیره شوند:
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <input
@@ -1469,18 +1719,18 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                       dir="ltr"
                       value={workerUrl}
                       onChange={(e) => setWorkerUrl(e.target.value)}
-                      placeholder="https://my-site-db.username.workers.dev"
+                      placeholder="https://shiri-api.YOUR-NAME.workers.dev"
                       className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--color-border)] text-xs font-mono-num"
                     />
                     <button
                       type="button"
                       onClick={() => {
                         localStorage.setItem(STORAGE_KEYS.HOST_API_KEY, workerUrl.trim());
-                        showNotice('آدرس Cloudflare Worker ذخیره شد.');
+                        showNotice('آدرس Cloudflare Worker ثبت شد.');
                       }}
                       className="px-4 py-2 rounded-lg bg-[var(--color-gold)] text-[#050505] font-bold text-xs cursor-pointer"
                     >
-                      ثبت و اتصال ابری
+                      ثبت آدرس ورکر
                     </button>
                   </div>
                 </div>
@@ -1538,12 +1788,12 @@ export const RozblogAdminPanel: React.FC<RozblogAdminPanelProps> = ({
                     type="button"
                     onClick={async () => {
                       await onUpdateSiteData(DEFAULT_SITE_DATA);
-                      showNotice('اطلاعات سایت به حالت پیش‌فرض استودیویی بازنشانی شد.');
+                      showNotice('اطلاعات سایت به داده‌های اصلی مصطفی شیری بازنشانی شد.');
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/40 text-red-400 text-xs font-bold cursor-pointer"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    <span>بازنشانی به داده‌های پیش‌فرض</span>
+                    <span>بازنشانی به اطلاعات پیش‌فرض</span>
                   </button>
                 </div>
               </div>
