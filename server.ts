@@ -1,10 +1,9 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * 
- * سرور فول‌استک پرده‌نگار و پیوستار آکوستیک • استودیو اینامیکس
- * Full-stack Express server with Vite middleware and unified Serverless API integration.
- * Supports local file-backed storage (data/blog_posts.json) and Cloudflare Workers KV.
+ *
+ * سرور فول‌استک وب‌سایت رسمی مصطفی شیری (Mostafa Shiri Official Website)
+ * Full-stack Express server with Vite middleware and unified Cloudflare KV-compatible API.
  */
 
 import express, { Request as ExpressReq, Response as ExpressRes } from 'express';
@@ -13,7 +12,6 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { handleApiRequest } from './src/server/apiRouter';
-import { SEED_BLOG_POSTS, SEED_PODCAST_EPISODES } from './src/server/seedData';
 
 dotenv.config();
 
@@ -28,67 +26,12 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Database storage directory & file for local development persistence
+// Local JSON storage simulating Cloudflare Workers KV in local development
 const DATA_DIR = path.resolve(__dirname, 'data');
-const DB_FILE = path.resolve(DATA_DIR, 'blog_posts.json');
-const PODCASTS_DB_FILE = path.resolve(DATA_DIR, 'podcasts.json');
 const SHIRI_DB_FILE = path.resolve(DATA_DIR, 'shiri_site_data.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Local file helpers
-function readDbPosts(): any[] {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Error reading DB_FILE:', err);
-  }
-  writeDbPosts(SEED_BLOG_POSTS);
-  return SEED_BLOG_POSTS;
-}
-
-function writeDbPosts(posts: any[]): void {
-  try {
-    const tempFile = `${DB_FILE}.tmp`;
-    fs.writeFileSync(tempFile, JSON.stringify(posts, null, 2), 'utf-8');
-    fs.renameSync(tempFile, DB_FILE);
-  } catch (err) {
-    console.error('Error writing DB_FILE:', err);
-  }
-}
-
-function readDbPodcasts(): any[] {
-  try {
-    if (fs.existsSync(PODCASTS_DB_FILE)) {
-      const data = fs.readFileSync(PODCASTS_DB_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Error reading PODCASTS_DB_FILE:', err);
-  }
-  writeDbPodcasts(SEED_PODCAST_EPISODES);
-  return SEED_PODCAST_EPISODES;
-}
-
-function writeDbPodcasts(podcasts: any[]): void {
-  try {
-    const tempFile = `${PODCASTS_DB_FILE}.tmp`;
-    fs.writeFileSync(tempFile, JSON.stringify(podcasts, null, 2), 'utf-8');
-    fs.renameSync(tempFile, PODCASTS_DB_FILE);
-  } catch (err) {
-    console.error('Error writing PODCASTS_DB_FILE:', err);
-  }
 }
 
 function readShiriData(): any | null {
@@ -98,7 +41,7 @@ function readShiriData(): any | null {
       return JSON.parse(raw);
     }
   } catch (err) {
-    console.error('Error reading SHIRI_DB_FILE:', err);
+    console.error('[MostafaShiri] Error reading SHIRI_DB_FILE:', err);
   }
   return null;
 }
@@ -109,31 +52,15 @@ function writeShiriData(data: any): void {
     fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(tempFile, SHIRI_DB_FILE);
   } catch (err) {
-    console.error('Error writing SHIRI_DB_FILE:', err);
+    console.error('[MostafaShiri] Error writing SHIRI_DB_FILE:', err);
   }
 }
 
-// Local KV Adapter simulating Cloudflare Workers KV for local Express development
+// Local KV Adapter matching Cloudflare Workers KV interface
 const localKvAdapter = {
-  async get(key: string, _type?: string): Promise<any> {
+  async get(key: string): Promise<any> {
     if (key === 'shiri_site_data') {
       return readShiriData();
-    }
-    if (key === 'blog_posts') {
-      return readDbPosts();
-    }
-    if (key.startsWith('post:')) {
-      const id = key.slice(5);
-      const posts = readDbPosts();
-      return posts.find((p: any) => p.id === id) || null;
-    }
-    if (key === 'podcasts_list') {
-      return readDbPodcasts();
-    }
-    if (key.startsWith('podcast:')) {
-      const id = key.slice(8);
-      const podcasts = readDbPodcasts();
-      return podcasts.find((p: any) => p.id === id) || null;
     }
     return null;
   },
@@ -143,41 +70,18 @@ const localKvAdapter = {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         writeShiriData(parsed);
       } catch (err) {
-        console.error('Error parsing shiri_site_data in local KV put:', err);
-      }
-    }
-    if (key === 'blog_posts') {
-      try {
-        const posts = JSON.parse(value);
-        writeDbPosts(posts);
-      } catch (err) {
-        console.error('Error parsing posts in local KV put:', err);
-      }
-    }
-    if (key === 'podcasts_list') {
-      try {
-        const podcasts = JSON.parse(value);
-        writeDbPodcasts(podcasts);
-      } catch (err) {
-        console.error('Error parsing podcasts in local KV put:', err);
+        console.error('[MostafaShiri] Error parsing shiri_site_data in local KV put:', err);
       }
     }
   },
   async delete(key: string): Promise<void> {
-    if (key.startsWith('post:')) {
-      const id = key.slice(5);
-      const posts = readDbPosts();
-      writeDbPosts(posts.filter((p: any) => p.id !== id));
+    if (key === 'shiri_site_data' && fs.existsSync(SHIRI_DB_FILE)) {
+      fs.unlinkSync(SHIRI_DB_FILE);
     }
-    if (key.startsWith('podcast:')) {
-      const id = key.slice(8);
-      const podcasts = readDbPodcasts();
-      writeDbPodcasts(podcasts.filter((p: any) => p.id !== id));
-    }
-  }
+  },
 };
 
-// --- Unified API Handler Bridge for Express ---
+// Unified Serverless API Bridge for Express (/api/*)
 app.all('/api/*', async (req: ExpressReq, res: ExpressRes) => {
   try {
     const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
@@ -202,8 +106,9 @@ app.all('/api/*', async (req: ExpressReq, res: ExpressRes) => {
     });
 
     const webRes = await handleApiRequest(webReq, {
+      SHIRI_KV: localKvAdapter,
       BLOG_KV: localKvAdapter,
-      MODIRIAT_ADMIN: process.env.MODIRIAT_ADMIN || process.env.VITE_MODIRIAT_ADMIN,
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || process.env.MODIRIAT_ADMIN,
     });
 
     res.status(webRes.status);
@@ -214,12 +119,12 @@ app.all('/api/*', async (req: ExpressReq, res: ExpressRes) => {
     const resText = await webRes.text();
     res.send(resText);
   } catch (err: any) {
-    console.error('[API Bridge Error]:', err);
+    console.error('[MostafaShiri API Error]:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// --- STATIC ASSETS & VITE INTEGRATION ---
+// Static Assets & Vite Integration
 async function startServer() {
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
@@ -241,11 +146,11 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[PardehNegar] Full-stack Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[Mostafa Shiri Official] Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
 startServer().catch((err) => {
-  console.error('[PardehNegar] Failed to start server:', err);
+  console.error('[Mostafa Shiri Official] Failed to start server:', err);
   process.exit(1);
 });

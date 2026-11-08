@@ -1,95 +1,45 @@
-# راهنمای استقرار سرورلس پرده‌نگار بر روی Cloudflare با سیستم KV
+# راهنمای اتصال و اجرای وب‌سایت رسمی مصطفی شیری بر روی Cloudflare (Workers / Pages + KV)
 
-این سند راهنمای کامل راه‌اندازی و انتشار پروژه **پرده‌نگار (Pardeh-Negar)** به عنوان یک برنامه فول‌استک سرورلس (Serverless) بر روی بستر کلودفلر با پایگاه داده کلید-مقدار **Cloudflare Workers KV** است.
-
----
-
-## ۱. منطق معماری جدید و بهینه‌سازی دیتابیس (KV Database)
-
-در نسخه قبلی، مقالات و یادداشت‌های پژوهشی وبلاگ در فایل محلی `data/blog_posts.json` ذخیره می‌شدند که برای سرورهای سنتی مناسب بود، اما در محیط سرورلس کلودفلر سیستم فایل محلی غیرقابل نوشتن (Read-only ephemeral) است.
-
-### تغییرات و بهینه‌سازی‌های اعمال شده:
-1. **سرویس دیتابیس اختصاصی KV (`src/server/kvDatabase.ts`)**:
-   - تمامی عملیات خواندن، نوشتن، ویرایش، حذف و بازنشانی مقالات به توابع بهینه KV کلودفلر تبدیل شدند.
-   - **کش لبه‌ای با تاخیر صفر (Sub-millisecond Global Caching)**: مقالات در سطح دیتاسنترهای لبه‌ای کلودفلر کش می‌شوند.
-   - **مقداردهی اولیه خودکار (Auto-seed)**: در نخستین اجرای برنامه پس از دیپلوی، چنانچه فضای KV خالی باشد، مقالات پژوهشی مرجع استاد ایمان برزجان به صورت خودکار در فضای KV ذخیره می‌شوند.
-2. **مسیریاب یکپارچه سرورلس (`src/server/apiRouter.ts`)**:
-   - تمامی اندپوینت‌های `/api/*` با استانداردهای مدرن Web Fetch API بازنویسی شدند.
-   - مدیریت امن متغیر محیطی `MODIRIAT_ADMIN` بدون قرار گرفتن هیچ رمز ثابتی در کدها.
-3. **انطباق دوگانه (Dual Deployment Compatibility)**:
-   - **Cloudflare Workers (از طریق `worker.ts` و `wrangler.toml`)**: بارگذاری خودکار استتیک‌ها از دایرکتوری `dist` و هندل کردن APIها.
-   - **Cloudflare Pages (از طریق `functions/api/[[route]].ts`)**: اتصال مستقیم ریپازیتوری گیت‌هاب به پنل Pages بدون نیاز به تنظیمات پیچیده.
-   - **محیط توسعه لوکال (`server.ts`)**: با یک آداپتور شبیه‌ساز KV همچنان امکان اجرای سرور Express به صورت آفلاین وجود دارد.
+این پروژه به صورت ۱۰۰٪ مستقل برای **وب‌سایت رسمی مصطفی شیری (Mostafa Shiri | خواننده · آهنگساز · تنظیم‌کننده)** آماده شده و بدون نیاز به هیچ تغییر کدی، قابل استقرار روی **Cloudflare Workers** یا **Cloudflare Pages** به همراه پایگاه داده ابری **Cloudflare Workers KV** است.
 
 ---
 
-## ۲. مراحل استقرار با استفاده از ابزار Wrangler
+## ۱. ساختار فایل‌های کلودفلر در پروژه
+- `worker.ts`: ورودی اصلی **Cloudflare Worker** که هم فایل‌های استاتیک فرانت‌اند (`./dist`) و هم درخواست‌های سرورلس `/api/*` را مدیریت می‌کند.
+- `functions/api/[[route]].ts`: مسیریاب خودکار **Cloudflare Pages Functions** در صورت اتصال مستقیم ریپازیتوری گیت‌هاب به Cloudflare Pages.
+- `src/server/apiRouter.ts`: هسته سرورلس مدیریت داده‌های سایت (`/api/shiri/data`، `/api/shiri/reset` و `/api/admin/verify`) متصل به فضای KV.
+- `wrangler.toml`: فایل تنظیمات استاندارد کلودفلر با نام سرویس `mostafa-shiri-official` و اتصال فضای ذخیره‌سازی `SHIRI_KV`.
 
-### مرحله اول: ورود به حساب کلودفلر
-در ترمینال، دستور زیر را اجرا کنید:
+---
+
+## ۲. روش اول: استقرار سریع با دستور Wrangler (Cloudflare Workers)
+
+### گام ۱: ورود به حساب کلودفلر
 ```bash
 npx wrangler login
 ```
 
-### مرحله دوم: ساخت فضای پایگاه‌داده KV
-دستورهای زیر را اجرا کنید تا دو فضای KV (یکی برای تولید و دیگری برای تست محلی) ساخته شوند:
+### گام ۲: ساخت فضای پایگاه داده KV
 ```bash
-# ساخت فضای اصلی
-npx wrangler kv namespace create BLOG_KV
-
-# ساخت فضای پیش‌نمایش (Preview)
-npx wrangler kv namespace create BLOG_KV --preview
+npx wrangler kv namespace create SHIRI_KV
+npx wrangler kv namespace create SHIRI_KV --preview
 ```
+شناسه‌های (`id` و `preview_id`) دریافتی را در فایل `wrangler.toml` جایگزین کنید.
 
-خروجی این دو دستور شناسه‌هایی (ID) شبیه به زیر به شما می‌دهد:
-```toml
-[[kv_namespaces]]
-binding = "BLOG_KV"
-id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-preview_id = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
-```
-این شناسه‌ها را در فایل `wrangler.toml` پروژه جایگزین مقادیر پیش‌فرض کنید.
-
-### مرحله سوم: تنظیم کلمه عبور مدیریت (رمز امنیت وبلاگ)
-برای تنظیم رمز عبور پنل مدیریت وبلاگ، دستور زیر را اجرا کرده و رمز انتخابی خود را وارد نمایید:
-```bash
-npx wrangler secret put MODIRIAT_ADMIN
-```
-
-### مرحله چهارم: بیلد و تست محلی با شبیه‌ساز KV
-```bash
-# نصب وابستگی‌ها
-npm install --legacy-peer-deps
-
-# بیلد فرانت‌اند
-npm run build
-
-# اجرای شبیه‌ساز کلودفلر در لوکال
-npx wrangler dev
-```
-
-### مرحله پنجم: انتشار نهایی روی کلودفلر
+### گام ۳: بیلد و انتشار روی کلودفلر
 ```bash
 npm run cf:deploy
 ```
-یا:
-```bash
-npx wrangler deploy
-```
+*(این دستور ابتدا `vite build` را اجرا کرده و سپس کل سایت و API سرورلس را روی کلودفلر منتشر می‌کند).*
 
 ---
 
-## ۳. روش جایگزین: استقرار مستقیم از طریق Cloudflare Pages
+## ۳. روش دوم: اتصال مستقیم گیت‌هاب به Cloudflare Pages
 
-چنانچه ترجیح می‌دهید پروژه با هر بار `git push` به صورت خودکار توسط کلودفلر بیلد شود:
-1. در داشبورد کلودفلر به بخش **Workers & Pages** بروید.
-2. گزینه **Create application** و سپس سربرگ **Pages** را انتخاب کنید.
-3. دکمه **Connect to Git** را زده و ریپازیتوری `PARDEH-NEGAR` را انتخاب کنید.
-4. تنظیمات بیلد:
+1. وارد داشبورد **Cloudflare > Workers & Pages** شوید و **Create application > Pages > Connect to Git** را انتخاب کنید.
+2. تنظیمات بیلد را به شکل زیر وارد کنید:
    - **Framework preset**: `Vite`
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-5. در بخش **Settings > Functions > KV namespace bindings**:
-   - نام Variable name را `BLOG_KV` بگذارید و به فضای KV متصل کنید.
-6. در بخش **Settings > Environment variables**:
-   - متغیر `MODIRIAT_ADMIN` را اضافه کرده و رمز مدیریت دلخواه را قرار دهید.
+3. پس از ساخت پروژه، از مسیر **Settings > Functions > KV namespace bindings** یک بایندینگ با نام `SHIRI_KV` به فضای KV خود متصل کنید.
+4. اکنون هر زمان که از داخل **پنل مدیریت سایت** (لینک فوتر · رمز پیش‌فرض: `ms1376`) یا از طریق **ویرایشگر زنده دیداری (Live Visual Editor)** دکمه **Apply** را بزنید، تغییرات در لحظه روی کلودفلر ذخیره شده و برای تمام بازدیدکنندگان نمایش داده می‌شود.

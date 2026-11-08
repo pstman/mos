@@ -34,7 +34,7 @@ import {
   DEFAULT_SITE_DATA,
   STORAGE_KEYS,
   filterTracks,
-  compileRozblogTemplate,
+  compileCustomTemplate,
   paginateItems,
   clampCardScale,
 } from './utils/shiriData';
@@ -44,7 +44,7 @@ import { SocialIconsBar } from './components/shiri/SocialIconsBar';
 import { StudioAudioPlayer } from './components/shiri/StudioAudioPlayer';
 import { StudioVideoPlayer } from './components/shiri/StudioVideoPlayer';
 import { TrackDetailView } from './components/shiri/TrackDetailView';
-import { RozblogAdminPanel } from './components/shiri/RozblogAdminPanel';
+import { AdminPanel } from './components/shiri/AdminPanel';
 import fallbackCover from './assets/images/album_cover_golden_night_1794140915037.jpg';
 
 export function App() {
@@ -270,7 +270,7 @@ export function App() {
   // Compiled Custom Template HTML
   const compiledTemplateHtml = useMemo(
     () =>
-      compileRozblogTemplate(
+      compileCustomTemplate(
         activeSiteData.template.customTemplateHtml || '',
         activeSiteData
       ),
@@ -651,7 +651,7 @@ export function App() {
       {/* VIEW 1: PASSWORD-PROTECTED ADMIN PANEL (#admin) */}
       {isAdminView ? (
         <main className="flex-1">
-          <RozblogAdminPanel
+          <AdminPanel
             siteData={siteData}
             onUpdateSiteData={handleUpdateSiteData}
             onCloseAdmin={() => {

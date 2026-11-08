@@ -53,7 +53,7 @@ type AdminTab = 'dashboard' | 'tracks' | 'videos' | 'blog' | 'socials' | 'templa
  * Comprehensive Studio & Website Management Panel (پنل مدیریت)
  * with Live Visual Editor launcher, Pagination & Scale controls, and Social Media manager.
  */
-export const RozblogAdminPanel: React.FC<AdminPanelProps> = ({
+export const AdminPanel: React.FC<AdminPanelProps> = ({
   siteData,
   onUpdateSiteData,
   onCloseAdmin,
